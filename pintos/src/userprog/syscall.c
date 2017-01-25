@@ -17,9 +17,10 @@ static void
 syscall_handler (struct intr_frame *f UNUSED)
 {
   printf ("system call!\n");
-  switch (f->&esp) {
+  int *s = f->esp;
+  switch (*s) {
     case 0: /* HALT */
-      halt_handler(void);
+      halt(void);
       break;
     case 1: /* EXIT */
       break;
@@ -28,7 +29,7 @@ syscall_handler (struct intr_frame *f UNUSED)
     case 3: /* WAIT */
       break;
     case 4: /* CREATE */
-      create_handler(f->&(esp+4), );
+      create_handler(char* (s+4),unsigned *(s+8));
       break;
     case 5: /* REMOVE */
       break;
@@ -65,7 +66,7 @@ syscall_handler (struct intr_frame *f UNUSED)
   thread_exit ();
 }
 
-void halt_handler(void) {
+void halt(void) {
   power_off();
 }
 
