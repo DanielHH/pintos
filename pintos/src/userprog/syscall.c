@@ -29,11 +29,12 @@ syscall_handler (struct intr_frame *f UNUSED)
     case 3: /* WAIT */
       break;
     case 4: /* CREATE */
-      create_handler(char* (s+4),unsigned *(s+8));
+      create(*(s+4), *(s+8));
       break;
     case 5: /* REMOVE */
       break;
     case 6: /* OPEN */
+      open(*(s+4));
       break;
     case 7: /* FILESIZE */
       break;
@@ -71,5 +72,9 @@ void halt(void) {
 }
 
 bool create (const char *file, unsigned initial_size) {
+  return filesys_create (file, initial_size);
+}
+
+int open (const char *file) {
 
 }
