@@ -4,6 +4,7 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/init.h"
+#include "filesys/filesys.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -29,12 +30,12 @@ syscall_handler (struct intr_frame *f UNUSED)
     case 3: /* WAIT */
       break;
     case 4: /* CREATE */
-      create(*(s+4), *(s+8));
+      f->eax = create(*(s+4), *(s+8));
       break;
     case 5: /* REMOVE */
       break;
     case 6: /* OPEN */
-      open(*(s+4));
+      f->eax = open(*(s+4));
       break;
     case 7: /* FILESIZE */
       break;
@@ -47,6 +48,7 @@ syscall_handler (struct intr_frame *f UNUSED)
     case 11: /* TELL */
       break;
     case 12: /* CLOSE */
+      close(*(s+4);
       break;
     case 13: /* MMAP */
       break;
@@ -76,5 +78,27 @@ bool create (const char *file, unsigned initial_size) {
 }
 
 int open (const char *file) {
+  int i;
+  thread *t = thread_current();
+  for(i=2; i<128; i++) {
+    if (t->open_files[i] == NULL) {
+      file *cur_file = (file*) malloc(sizeof(file));
+      cur_file = filesys_open (file);
+      file_desc *fd = (file_desc*) malloc(sizeof(file_desc));
+      fd->fd = i;
+      fd->file = cur_file;
+      t->open_files[i] = fd;
+      return i;
+    }
+  }
+  return -1;
+}
 
+void close (int fd) {
+  if(fd > 1 && fd < 128) {
+    thread *t = thread_current();
+    file_close (t->open_files[fd]->file);
+    free(t->open_files[fd]);
+    t->open_files[fd] = NULL;
+  }
 }

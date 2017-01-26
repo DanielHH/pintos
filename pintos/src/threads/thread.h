@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "filesys/file.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -95,12 +96,23 @@ struct thread
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
+
+    struct file_desc *open_files[128] = {NULL};
+    struct file_desc **ofi = open_files[2];
+    struct file_desc **ofend = &open_files[128];
 #endif
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };
 
+#ifdef USERPROG
+struct file_desc
+  {
+    int fd;
+    file* file = NULL;
+  };
+#endif
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
