@@ -40,6 +40,7 @@ syscall_handler (struct intr_frame *f UNUSED)
     case 7: /* FILESIZE */
       break;
     case 8: /* READ */
+      f->eax = read(*(s+4), *(s+8), *(s+12))
       break;
     case 9: /* WRITE */
       break;
@@ -100,5 +101,25 @@ void close (int fd) {
     file_close (t->open_files[fd]->file);
     free(t->open_files[fd]);
     t->open_files[fd] = NULL;
+  }
+}
+
+int read(int fd, void *buffer, unsigned size) {
+  if(fd == 0) {
+    int read_bytes = 0;
+    for(int i = 0; i < size; i++) {
+      uint8_t read_byte = input_getc (void);
+      *buffer = read_byte;
+      read_bytes++;
+      buffer += 1;
+    }
+    return read_bytes;
+  }
+  else if(fd > 1 && fd < 128) {
+    thread *t = thread_current();
+    return file_read (t->open_files[fd]->file, buffer, size);
+  }
+  else {
+    return -1;
   }
 }
