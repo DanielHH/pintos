@@ -85,8 +85,7 @@ int open (const char *file) {
   thread *t = thread_current();
   for(i=2; i<128; i++) {
     if (t->open_files[i] == NULL) {
-      file *cur_file = (file*) malloc(sizeof(file));
-      cur_file = filesys_open (file);
+      file *cur_file = filesys_open (file);
       file_desc *fd = (file_desc*) malloc(sizeof(file_desc));
       fd->fd = i;
       fd->file = cur_file;
