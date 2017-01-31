@@ -5,6 +5,8 @@
 #include "threads/thread.h"
 #include "threads/init.h"
 #include "filesys/filesys.h"
+#include "threads/malloc.h"
+#include "devices/input.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -17,41 +19,40 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f UNUSED)
 {
-  printf ("system call!\n");
   int *s = f->esp;
   switch (*s) {
     case 0: /* HALT */
-      halt(void);
+      halt();
       break;
     case 1: /* EXIT */
-      exit (*(s+4));
+      exit (*(s+1));
       break;
     case 2: /* EXEC */
       break;
     case 3: /* WAIT */
       break;
     case 4: /* CREATE */
-      f->eax = create(*(s+4), *(s+4+sizeof(char*)));
+      f->eax = (uint32_t) create((const char *)*(s+1), *(s+2));
       break;
     case 5: /* REMOVE */
       break;
     case 6: /* OPEN */
-      f->eax = open(*(s+4));
+      f->eax = open((const char *)*(s+1));
       break;
     case 7: /* FILESIZE */
       break;
     case 8: /* READ */
-      f->eax = read(*(s+4), *(s+4+sizeof(int*)), *(s+4+sizeof(int*)+sizeof(void*)));
+      f->eax = read(*(s+1),(void *) *(s+2), *(s+3));
       break;
     case 9: /* WRITE */
-      f->eax = write(*(s+4), *(s+4+sizeof(int*)), *(s+4+sizeof(int*)+sizeof(void*)));
+      f->eax = write(*(s+1), (const void *) *(s+2), *(s+3));
       break;
     case 10: /* SEEK */
       break;
     case 11: /* TELL */
       break;
     case 12: /* CLOSE */
-      close(*(s+4);
+      close(*(s+1));
       break;
     case 13: /* MMAP */
       break;
@@ -67,9 +68,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       break;
     case 19: /* INUMBER */
       break;
-
   }
-  thread_exit ();
 }
 
 void halt(void) {
@@ -81,46 +80,45 @@ bool create (const char *file, unsigned initial_size) {
 }
 
 int open (const char *file) {
-  int i;
-  thread *t = thread_current();
-  for(i=2; i<128; i++) {
-    if (t->open_files[i] == NULL) {
-      file *cur_file = (file*) malloc(sizeof(file));
-      cur_file = filesys_open (file);
-      file_desc *fd = (file_desc*) malloc(sizeof(file_desc));
-      fd->fd = i;
-      fd->file = cur_file;
-      t->open_files[i] = fd;
-      return i;
+  unsigned i;
+  struct thread *t = thread_current();
+  struct file *cur_file;
+  cur_file = filesys_open (file);
+  if (cur_file != NULL) {
+    for(i=2; i<130; i++) {
+      if (t->open_files[i-2] == NULL) {
+        t->open_files[i-2] = cur_file;
+        return i;
+      }
     }
   }
   return -1;
 }
 
 void close (int fd) {
-  if(fd > 1 && fd < 128) {
-    thread *t = thread_current();
-    file_close (t->open_files[fd]->file);
-    free(t->open_files[fd]);
-    t->open_files[fd] = NULL;
+  if(fd > 1 && fd < 130) {
+    struct thread *t = thread_current();
+    file_close (t->open_files[fd-2]);
+    t->open_files[fd-2] = NULL;
   }
 }
 
 int read (int fd, void *buffer, unsigned size) {
   if(fd == 0) {
     int read_bytes = 0;
-    for(int i = 0; i < size; i++) {
-      uint8_t read_byte = input_getc (void);
-      *buffer = read_byte;
+    unsigned i;
+    for(i = 0; i < size; i++) {
+      uint8_t read_byte = input_getc ();
+      buffer = &read_byte;
       read_bytes++;
       buffer += 1;
     }
     return read_bytes;
   }
-  else if(fd > 1 && fd < 128) {
-    thread *t = thread_current();
-    if(t->open_files[fd] != NULL) {
-      return (int) file_read (t->open_files[fd]->file, buffer, (off_t) size);
+  else if(fd > 1 && fd < 130) {
+    struct thread *t = thread_current();
+    if(t->open_files[fd-2] != NULL) {
+      return (int) file_read (t->open_files[fd-2], buffer, (off_t) size);
     }
   }
   return -1;
@@ -129,25 +127,31 @@ int read (int fd, void *buffer, unsigned size) {
 int write (int fd, const void *buffer, unsigned size) {
   if (fd == 1) {
     char *char_buffer = (char *) buffer;
-    if(sizeof(char_buffer) > 256) {
-      char_buffer[256] = '\0';
+    if(strlen(char_buffer) < size) {
+      size = strlen(char_buffer);
     }
-    putbuf (char_buffer, sizeof(char_buffer));
-    return(sizeof(char_buffer));
+    if(size > 256) {
+      size = 256;
+    }
+    putbuf (char_buffer, size);
+    return (size);
   }
-  else if (fd > 1 && fd < 128) {
-    thread *t = thread_current();
-    if(t->open_files[fd] != NULL) {
-      return (int) file_write (t->open_files[fd]->file, buffer, (off_t) size);
+  else if (fd > 1 && fd < 130) {
+    struct thread *t = thread_current();
+    if(t->open_files[fd-2] != NULL) {
+      return (int) file_write (t->open_files[fd-2], buffer, (off_t) size);
     }
   }
   return -1;
 }
 
 void exit (int status) {
-  thread *t = thread_current();
-  for (int fd = 2; fd < 128; fd++) {
-    void close (fd);
+  unsigned fd;
+  struct thread *t = thread_current();
+  for (fd = 2; fd < 130; fd++) {
+    if (t->open_files[fd-2] != NULL) {
+      close (fd);
+    }
   }
-  t->thread_exit (void);
+  thread_exit ();
 }

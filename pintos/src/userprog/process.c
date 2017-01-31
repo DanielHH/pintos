@@ -90,7 +90,6 @@ process_wait (tid_t child_tid UNUSED)
 {
 
   while(true) {
-    printf ("hi!");
   };
   return -1;
 }
@@ -480,7 +479,6 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success) {
-        printf ("bye!");
         *esp = PHYS_BASE - 12;
       }
       else
