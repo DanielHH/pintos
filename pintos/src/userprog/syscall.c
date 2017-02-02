@@ -72,6 +72,13 @@ syscall_handler (struct intr_frame *f UNUSED)
 }
 
 void halt(void) {
+  unsigned fd;
+  struct thread *t = thread_current();
+  for (fd = 2; fd < 130; fd++) {
+    if (t->open_files[fd-2] != NULL) {
+      close (fd);
+    }
+  }
   power_off();
 }
 
