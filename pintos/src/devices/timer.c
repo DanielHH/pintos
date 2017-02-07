@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include "threads/interrupt.h"
 #include "threads/io.h"
-#include "threads/synch.h"
 #include "threads/thread.h"
 #include "threads/malloc.h"
 
@@ -29,14 +28,16 @@ static intr_handler_func timer_interrupt;
 static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
+static void list_insert_ordered_wake_up_tick (struct list *, struct list_elem *);
 
-static struct list sleeping_threads;
+struct list sleeping_threads;
 /* Sets up the 8254 Programmable Interval Timer (PIT) to
    interrupt PIT_FREQ times per second, and registers the
    corresponding interrupt. */
 void
 timer_init (void)
 {
+  list_init(&sleeping_threads);
   /* 8254 input frequency divided by TIMER_FREQ, rounded to
      nearest. */
   uint16_t count = (1193180 + TIMER_FREQ / 2) / TIMER_FREQ;
@@ -44,6 +45,8 @@ timer_init (void)
   outb (0x43, 0x34);    /* CW: counter 0, LSB then MSB, mode 2, binary. */
   outb (0x40, count & 0xff);
   outb (0x40, count >> 8);
+
+  intr_register_ext (0x20, timer_interrupt, "8254 Timer");
 
 }
 
@@ -98,17 +101,12 @@ void
 timer_sleep (int64_t ticks)
 {
 
-  int64_t start = timer_ticks ();
-  struct semaphore s;
-  sema_init(&s, 0);
-
   ASSERT (intr_get_level () == INTR_ON);
-  struct sleeper *sleep = (struct sleeper *) malloc(sizeof(struct sleeper));
-  sleep->start = start;
-  sleep->end = ticks;
-  sleep->sema = &s;
-  list_push_back(&sleeping_threads, &(sleep->elem));
-  sema_down(&s);
+  struct sleeper sleep;
+  sleep.wake_up_tick = timer_ticks() + ticks;
+  sema_init(&(sleep.sema), 0);
+  list_insert_ordered_wake_up_tick(&sleeping_threads, &(sleep.elem));
+  sema_down(&(sleep.sema));
 }
 
 /* Suspends execution for approximately MS milliseconds. */
@@ -122,7 +120,7 @@ timer_msleep (int64_t ms)
 void
 timer_usleep (int64_t us)
 {
-  real_time_sleep (us, 1000 * 1000);
+  real_time_sleep(us, 1000 * 1000);
 }
 
 /* Suspends execution for approximately NS nanoseconds. */
@@ -145,14 +143,18 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
-  struct list_elem *e;
 
-  for (e = list_begin(&sleeping_threads); e != list_end (&sleeping_threads); e = list_next (e)) {
-    struct sleeper *sleeper = list_entry (e, struct sleeper, elem);
-    if (timer_elapsed (sleeper->start) >= sleeper->end) {
-      sema_up(sleeper->sema);
-      list_remove(&(sleeper->elem));
-      free(sleeper);
+  while(!list_empty(&sleeping_threads)){
+    struct sleeper *sleep = list_entry(list_begin(&sleeping_threads), struct sleeper, elem);
+    if (sleep->wake_up_tick >= timer_ticks()) {
+      printf("%d\n",__LINE__);
+      sleep = list_entry(list_pop_front(&sleeping_threads), struct sleeper, elem);
+      printf("%d\n",__LINE__);
+      sema_up(&(sleep->sema));
+    }
+    else {
+      printf("%d\n",__LINE__);
+      break;
     }
   }
 }
@@ -215,4 +217,20 @@ real_time_sleep (int64_t num, int32_t denom)
       ASSERT (denom % 1000 == 0);
       busy_wait (loops_per_tick * num / 1000 * TIMER_FREQ / (denom / 1000));
     }
+}
+
+static void
+list_insert_ordered_wake_up_tick(struct list *list, struct list_elem *elem) {
+  struct list_elem *e;
+  ASSERT (list != NULL);
+  ASSERT (elem != NULL);
+
+  struct sleeper *new_elem = list_entry (elem, struct sleeper, elem);
+  for (e = list_begin (list); e != list_end (list); e = list_next (e)) {
+    struct sleeper *cur_elem = list_entry (e, struct sleeper, elem);
+    if(new_elem->wake_up_tick < cur_elem->wake_up_tick) {
+      break;
+    }
+  }
+  list_insert(e, elem);
 }

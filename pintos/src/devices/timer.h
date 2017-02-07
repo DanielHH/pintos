@@ -3,6 +3,7 @@
 
 #include <round.h>
 #include <stdint.h>
+#include "threads/synch.h"
 #include "lib/kernel/list.h"
 
 /* Number of timer interrupts per second. */
@@ -23,9 +24,8 @@ void timer_print_stats (void);
 
 struct sleeper {
   struct list_elem elem;
-  int64_t start;
-  int64_t end;
-  struct semaphore *sema;
+  int64_t wake_up_tick;
+  struct semaphore sema;
 };
 
 #endif /* devices/timer.h */
