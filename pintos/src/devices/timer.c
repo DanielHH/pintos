@@ -147,13 +147,10 @@ timer_interrupt (struct intr_frame *args UNUSED)
   while(!list_empty(&sleeping_threads)){
     struct sleeper *sleep = list_entry(list_begin(&sleeping_threads), struct sleeper, elem);
     if (sleep->wake_up_tick <= timer_ticks()) {
-      printf("%d\n",__LINE__);
       sleep = list_entry(list_pop_front(&sleeping_threads), struct sleeper, elem);
-      printf("%d\n",__LINE__);
       sema_up(&(sleep->sema));
     }
     else {
-      printf("%d\n",__LINE__);
       break;
     }
   }
