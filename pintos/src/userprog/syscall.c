@@ -166,5 +166,5 @@ void exit (int status) {
 
 
 pid_t exec (const char *cmd_line) {
-
+  return process_execute(cmd_line);
 }

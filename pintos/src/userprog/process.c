@@ -30,6 +30,9 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
+  struct parent_info parent_info;
+  sema_init(&parent_info.s, 0);
+  parent_info.parent_thread = thread_current();
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -37,20 +40,21 @@ process_execute (const char *file_name)
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
-
+  parent_info.fn = fn_copy;
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, &parent_info);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
+  sema_down(&parent_info.s);
   return tid;
 }
 
 /* A thread function that loads a user process and starts it
    running. */
 static void
-start_process (void *file_name_)
+start_process (struct parent_info *parent_info)
 {
-  char *file_name = file_name_;
+  char *file_name = parent_info->fn;
   struct intr_frame if_;
   bool success;
 
