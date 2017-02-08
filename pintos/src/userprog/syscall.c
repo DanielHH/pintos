@@ -28,6 +28,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       exit (*(s+1));
       break;
     case 2: /* EXEC */
+      f->eax = exec ((const char *)*(s+1));
       break;
     case 3: /* WAIT */
       break;
@@ -161,4 +162,9 @@ void exit (int status) {
     }
   }
   thread_exit ();
+}
+
+
+pid_t exec (const char *cmd_line) {
+
 }
