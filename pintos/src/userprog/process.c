@@ -46,7 +46,13 @@ process_execute (const char *file_name)
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
   sema_down(&parent_info.s);
-  return tid;
+  if (parent_info.load_success) {
+    list_push_back(&(parent_info.parent_thread->children), &(parent_info.child_thread->elem);
+    return tid;
+  }
+  else {
+    return TID_ERROR;
+  }
 }
 
 /* A thread function that loads a user process and starts it
@@ -54,9 +60,12 @@ process_execute (const char *file_name)
 static void
 start_process (struct parent_info *parent_info)
 {
+  struct thread *cur_thread = thread_current();
+  cur_thread->parent = parent_info->parent_thread;
   char *file_name = parent_info->fn;
   struct intr_frame if_;
   bool success;
+
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -64,6 +73,8 @@ start_process (struct parent_info *parent_info)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
+  parent_info->load_success = success;
+  sema_up(&parent_info->s);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
