@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include "filesys/file.h"
+#include "threads/synch.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -98,13 +99,31 @@ struct thread
     uint32_t *pagedir;                  /* Page directory. */
 
     struct list children;
-    struct thread *parent;
+    struct parent_child *parent;
     struct file *open_files[128];
+
+
+
+
 #endif
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };
+
+
+  struct parent_child {
+    int exit_status;
+    int alive_count;
+
+    struct list_elem elem;
+    struct thread *parent_thread;
+    struct thread *child_thread;
+    char *fn;
+    bool load_success;
+    struct semaphore awake_parent;
+  };
+
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
