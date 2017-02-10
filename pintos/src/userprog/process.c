@@ -17,6 +17,7 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "threads/malloc.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -30,9 +31,11 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
-  struct parent_info parent_info;
-  sema_init(&parent_info.s, 0);
-  parent_info.parent_thread = thread_current();
+  struct parent_child *child = (struct parent_child *) malloc(sizeof(struct parent_child));
+  child->alive_count = 2;
+  sema_init(&child->awake_parent, 0);
+  struct thread *cur_thread = thread_current();
+  child->parent_thread = cur_thread;
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -40,14 +43,15 @@ process_execute (const char *file_name)
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
-  parent_info.fn = fn_copy;
+  child->fn = fn_copy;
+
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, &parent_info);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, child);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
-  sema_down(&parent_info.s);
-  if (parent_info.load_success) {
-    list_push_back(&(parent_info.parent_thread->children), &(parent_info.child_thread->elem);
+  sema_down(&child->awake_parent);
+  if (child->load_success) {
+    list_push_back(&(cur_thread->children), &(child->elem));
     return tid;
   }
   else {
@@ -58,11 +62,11 @@ process_execute (const char *file_name)
 /* A thread function that loads a user process and starts it
    running. */
 static void
-start_process (struct parent_info *parent_info)
+start_process (struct parent_child *parent)
 {
   struct thread *cur_thread = thread_current();
-  cur_thread->parent = parent_info->parent_thread;
-  char *file_name = parent_info->fn;
+  cur_thread->parent = parent;
+  char *file_name = parent->fn;
   struct intr_frame if_;
   bool success;
 
@@ -73,8 +77,8 @@ start_process (struct parent_info *parent_info)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp);
-  parent_info->load_success = success;
-  sema_up(&parent_info->s);
+  parent->load_success = success;
+  sema_up(&parent->awake_parent);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
