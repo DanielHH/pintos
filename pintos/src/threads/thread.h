@@ -98,31 +98,27 @@ struct thread
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 
-    struct list children;
-    struct parent_child *parent;
     struct file *open_files[128];
 
 
 
 
 #endif
-
+    struct list children;
+    struct parent_child *parent;
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };
 
 
-  struct parent_child {
-    int exit_status;
-    int alive_count;
+struct parent_child {
+  int exit_status;
+  int alive_count;
 
-    struct list_elem elem;
-    struct thread *parent_thread;
-    struct thread *child_thread;
-    char *fn;
-    bool load_success;
-    struct semaphore awake_parent;
-  };
+  struct list_elem elem;
+  struct thread *parent_thread;
+  struct thread *child_thread;
+};
 
 
 /* If false (default), use round-robin scheduler.

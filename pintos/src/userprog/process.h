@@ -10,5 +10,11 @@ int process_wait (tid_t);
 void process_exit (void);
 void process_activate (void);
 
+struct start_process_info {
+  char *console;
+  bool load_success;
+  struct semaphore awake_parent;
+  struct parent_child *parent_child;
+};
 
 #endif /* userprog/process.h */

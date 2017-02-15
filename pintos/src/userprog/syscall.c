@@ -1,5 +1,6 @@
 #include "userprog/syscall.h"
 #include <stdio.h>
+#include <string.h>
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
@@ -7,6 +8,7 @@
 #include "filesys/filesys.h"
 #include "threads/malloc.h"
 #include "devices/input.h"
+#include "userprog/process.h"
 
 static void syscall_handler (struct intr_frame *);
 
