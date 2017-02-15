@@ -20,4 +20,6 @@ int write (int fd, const void *buffer, unsigned size);
 pid_t exec (const char *cmd_line);
 
 void exit (int status);
+
+int wait (pid_t pid);
 #endif /* userprog/syscall.h */
