@@ -163,6 +163,9 @@ void exit (int status) {
       close (fd);
     }
   }
+  if(t->parent != NULL) {
+    t->parent->exit_status = status;
+  }
   thread_exit ();
 }
 

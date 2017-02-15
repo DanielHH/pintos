@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "threads/malloc.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -280,7 +281,26 @@ thread_exit (void)
 #ifdef USERPROG
   process_exit ();
 #endif
+  struct thread *cur_thread = thread_current();
 
+  struct list_elem *e;
+
+  for (e = list_begin (&cur_thread->children); e != list_end (&cur_thread->children);
+       e = list_next (e))
+    {
+      struct parent_child *pc = list_entry (e, struct parent_child, elem);
+      pc->alive_count --;
+      if (pc->alive_count <= 0) {
+        free(pc);
+      }
+    }
+  struct parent_child *my_parent = cur_thread->parent;
+  if(my_parent != NULL) {
+    my_parent->alive_count --;
+    if (my_parent->alive_count <= 0) {
+      free(my_parent);
+    }
+  }
   /* Just set our status to dying and schedule another process.
      We will be destroyed during the call to schedule_tail(). */
   intr_disable ();

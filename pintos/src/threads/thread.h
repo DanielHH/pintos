@@ -102,7 +102,6 @@ struct thread
 
 
 
-
 #endif
     struct list children;
     struct parent_child *parent;
