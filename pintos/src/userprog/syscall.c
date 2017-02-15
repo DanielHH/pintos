@@ -33,6 +33,7 @@ syscall_handler (struct intr_frame *f UNUSED)
       f->eax = exec ((const char *)*(s+1));
       break;
     case 3: /* WAIT */
+      f->eax = wait(*(s+1));
       break;
     case 4: /* CREATE */
       f->eax = (uint32_t) create((const char *)*(s+1), *(s+2));
@@ -172,4 +173,8 @@ void exit (int status) {
 
 pid_t exec (const char *cmd_line) {
   return process_execute(cmd_line);
+}
+
+int wait (pid_t pid) {
+  
 }
