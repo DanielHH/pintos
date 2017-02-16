@@ -289,10 +289,12 @@ thread_exit (void)
        e = list_next (e))
     {
       struct parent_child *pc = list_entry (e, struct parent_child, elem);
+      lock_acquire(pc->counter_lock);
       pc->alive_count --;
       if (pc->alive_count <= 0) {
         free(pc);
       }
+      lock_release(pc->counter_lock);
     }
   struct parent_child *my_parent = cur_thread->parent;
   if(my_parent != NULL) {

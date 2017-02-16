@@ -45,6 +45,7 @@ process_execute (const char *file_name)
 
   struct parent_child *pc = (struct parent_child *) malloc(sizeof(struct parent_child));
   pc->alive_count = 2;
+  lock_init(pc->counter_lock);
   spi.parent_child = pc;
   struct thread *cur_thread = thread_current();
   pc->parent_thread = cur_thread;

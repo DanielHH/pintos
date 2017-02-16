@@ -117,6 +117,7 @@ struct parent_child {
   struct list_elem elem;
   struct thread *parent_thread;
   struct thread *child_thread;
+  struct lock *counter_lock;
 };
 
 
