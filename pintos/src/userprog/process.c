@@ -49,6 +49,7 @@ process_execute (const char *file_name)
   spi.parent_child = pc;
   struct thread *cur_thread = thread_current();
   pc->parent_thread = cur_thread;
+  sema_init(&pc->waiter, 0);
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, &spi);
@@ -113,9 +114,20 @@ start_process (void *aux)
 int
 process_wait (tid_t child_tid UNUSED)
 {
+  struct thread *cur_thread = thread_current ();
+  struct list_elem *e;
+  int exit_status;
 
-  while(true) {
-  };
+  for (e = list_begin (&cur_thread->children); e != list_end (&cur_thread->children);
+       e = list_next (e)) {
+      struct parent_child *pc = list_entry (e, struct parent_child, elem);
+      if (pc->child_pid == child_tid) {
+        sema_down(&pc->waiter);
+        exit_status = pc->exit_status;
+        pc->exit_status = -1;
+        return exit_status;
+      }
+  }
   return -1;
 }
 

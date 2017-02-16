@@ -298,10 +298,15 @@ thread_exit (void)
     }
   struct parent_child *my_parent = cur_thread->parent;
   if(my_parent != NULL) {
+    if(my_parent->waiter.value == 0) {
+      sema_up(&my_parent->waiter);
+    }
+    lock_acquire(my_parent->counter_lock);
     my_parent->alive_count --;
     if (my_parent->alive_count <= 0) {
       free(my_parent);
     }
+    lock_release(my_parent->counter_lock);
   }
   /* Just set our status to dying and schedule another process.
      We will be destroyed during the call to schedule_tail(). */

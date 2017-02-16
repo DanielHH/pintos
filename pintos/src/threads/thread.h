@@ -116,8 +116,11 @@ struct parent_child {
 
   struct list_elem elem;
   struct thread *parent_thread;
+  tid_t parent_pid;
   struct thread *child_thread;
+  tid_t child_pid;
   struct lock *counter_lock;
+  struct semaphore waiter;
 };
 
 
