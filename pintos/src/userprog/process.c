@@ -43,6 +43,7 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
   spi.console = fn_copy;
 
+
   struct parent_child *pc = (struct parent_child *) malloc(sizeof(struct parent_child));
   pc->alive_count = 2;
   sema_init(&pc->counter_lock, 1);
@@ -83,7 +84,10 @@ start_process (void *aux)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
+
+  /* loads */
   success = load (file_name, &if_.eip, &if_.esp);
+
   spi->load_success = success;
   sema_up(&spi->awake_parent);
 
