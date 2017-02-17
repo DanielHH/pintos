@@ -45,7 +45,7 @@ process_execute (const char *file_name)
 
   struct parent_child *pc = (struct parent_child *) malloc(sizeof(struct parent_child));
   pc->alive_count = 2;
-  lock_init(pc->counter_lock);
+  sema_init(&pc->counter_lock, 1);
   spi.parent_child = pc;
   struct thread *cur_thread = thread_current();
   pc->parent_thread = cur_thread;
@@ -516,7 +516,7 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success) {
-        *esp = PHYS_BASE - 12;
+        *esp = PHYS_BASE;
       }
       else
         palloc_free_page (kpage);

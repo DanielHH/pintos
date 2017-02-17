@@ -119,7 +119,7 @@ struct parent_child {
   tid_t parent_pid;
   struct thread *child_thread;
   tid_t child_pid;
-  struct lock *counter_lock;
+  struct semaphore counter_lock;
   struct semaphore waiter;
 };
 
