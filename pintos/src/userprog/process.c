@@ -18,6 +18,7 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
+#include "lib/string.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -62,6 +63,7 @@ process_execute (const char *file_name)
     return tid;
   }
   else {
+    free(pc);
     return TID_ERROR;
   }
 }
@@ -258,6 +260,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
+  char *fn_copy;
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
@@ -270,10 +273,26 @@ load (const char *file_name, void (**eip) (void), void **esp)
     goto done;
   }
 
+  /* Set arguments on stack. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+  fn_copy = palloc_get_page (0);
+  if (fn_copy == NULL)
+    goto done;
+  strlcpy (fn_copy, file_name, PGSIZE);
+  char *argv[32];
+  char *token;
+  char *save_ptr;
+  int argc = 0;
+
+  for (token = strtok_r (fn_copy, " ", &save_ptr);
+      token != NULL;
+      token = strtok_r (NULL, " ", &save_ptr)) {
+    // Set words and pointers on stack. Remember to increment argc for every argument.
+  }
+
    /* Uncomment the following line to print some debug
      information. This will be useful when you debug the program
      stack.*/
-/*#define STACK_DEBUG*/
+#define STACK_DEBUG
 
 #ifdef STACK_DEBUG
   printf("*esp is %p\nstack contents:\n", *esp);
@@ -409,7 +428,7 @@ static bool
 validate_segment (const struct Elf32_Phdr *phdr, struct file *file)
 {
   /* p_offset and p_vaddr must have the same page offset. */
-  if ((phdr->p_offset & PGMASK) != (phdr->p_vaddr & PGMASK))
+  if ((phdr->p_offset  & PGMASK) != (phdr->p_vaddr & PGMASK))
     return false;
 
   /* p_offset must point within FILE. */
@@ -471,7 +490,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT (ofs % PGSIZE == 0);
 
   file_seek (file, ofs);
-  while (read_bytes > 0 || zero_bytes > 0)
+  while (read_bytes > 0 || zeload (ro_bytes > 0)
     {
       /* Calculate how to fill this page.
          We will read PAGE_READ_BYTES bytes from FILE
