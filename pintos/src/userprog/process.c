@@ -260,7 +260,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
-  char *fn_copy;
+  char fn_copy[strlen(file_name)];
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
@@ -274,13 +274,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
   }
 
   /* Set arguments on stack. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-  fn_copy = palloc_get_page (0);
-  if (fn_copy == NULL)
-    goto done;
   strlcpy (fn_copy, file_name, PGSIZE);
   char *argv[32];
   char *token;
   char *save_ptr;
+  char *esp_copy;
   int argc = 0;
 
   for (token = strtok_r (fn_copy, " ", &save_ptr);
@@ -288,6 +286,12 @@ load (const char *file_name, void (**eip) (void), void **esp)
       token = strtok_r (NULL, " ", &save_ptr)) {
     // Set words and pointers on stack. Remember to increment argc for every argument.
     argv[argc] = token;
+
+    *esp -= strlen(token);
+    esp_copy = (char*) *esp;
+    for (i = 0; i < strlen(token); i++) {
+      //
+    }
     argc ++;
   }
 
