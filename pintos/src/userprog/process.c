@@ -287,6 +287,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
       token != NULL;
       token = strtok_r (NULL, " ", &save_ptr)) {
     // Set words and pointers on stack. Remember to increment argc for every argument.
+    argv[argc] = token;
+    argc ++;
   }
 
    /* Uncomment the following line to print some debug
@@ -490,7 +492,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   ASSERT (ofs % PGSIZE == 0);
 
   file_seek (file, ofs);
-  while (read_bytes > 0 || zeload (ro_bytes > 0)
+  while (read_bytes > 0 || zero_bytes > 0)
     {
       /* Calculate how to fill this page.
          We will read PAGE_READ_BYTES bytes from FILE
