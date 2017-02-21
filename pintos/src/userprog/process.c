@@ -280,6 +280,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   char *save_ptr;
   char *esp_copy;
   int argc = 0;
+  uintptr_t *esp_ptr;
 
   for (token = strtok_r (fn_copy, " ", &save_ptr);
       token != NULL;
@@ -289,6 +290,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
     *esp -= (strlen(token) + 1);
     esp_copy = (char*) *esp;
+    argv[argc] = esp_copy;
     for (i = 0; i < strlen(token); i++) {
       *esp_copy = token[i];
       esp_copy ++;
@@ -302,14 +304,20 @@ load (const char *file_name, void (**eip) (void), void **esp)
     printf("%s\n", argv[i]);
   }*/
 
-  printf ("%i\n", ((uint8_t) *esp) % 4);
-  // Put pointers on stack
+
+  /* Wordalign */
+  //printf ("%i\n", ((uint8_t) *esp) % 4);
   *esp -= ((uint8_t) *esp) % 4;
-/*
-  for (i = argc; i > 0; i--) {
-    argv[i];
+
+  /* Put pointers on stack */
+  esp_ptr = (uintptr_t) *esp;
+
+  for (i = argc; i >= 0; i--) {
+    esp_ptr -= 1;
+    *esp_ptr = argv[i];
   }
-*/
+  *esp = esp_ptr;
+
 
    /* Uncomment the following line to print some debug
      information. This will be useful when you debug the program
