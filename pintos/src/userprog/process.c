@@ -281,11 +281,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
   char *esp_copy;
   int argc = 0;
   uintptr_t *esp_ptr;
+  uintptr_t *argv_saver;
 
   for (token = strtok_r (fn_copy, " ", &save_ptr);
       token != NULL;
       token = strtok_r (NULL, " ", &save_ptr)) {
-    // Set words and pointers on stack. Remember to increment argc for every argument.
     argv[argc] = token;
 
     *esp -= (strlen(token) + 1);
@@ -299,14 +299,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
     argc ++;
   }
   argv[argc + 1] = NULL;
-  /*printf("%i\n", argc);
-  for (i = 0; i < argc; i++) {
-    printf("%s\n", argv[i]);
-  }*/
-
 
   /* Wordalign */
-  //printf ("%i\n", ((uint8_t) *esp) % 4);
   *esp -= ((uint8_t) *esp) % 4;
 
   /* Put pointers on stack */
@@ -316,8 +310,22 @@ load (const char *file_name, void (**eip) (void), void **esp)
     esp_ptr -= 1;
     *esp_ptr = argv[i];
   }
+
+  /* Saves argv on stack */
+  argv_saver = esp_ptr; // Save current address (which is now the adress of argv[0])
+  esp_ptr -= 1;
+  *esp_ptr = argv_saver;
   *esp = esp_ptr;
 
+  /* Saves argc on stack */
+  esp_ptr -= 1;
+  *esp_ptr = argc;
+  *esp = esp_ptr;
+
+
+  /* Saves fake "return address" on stack */
+  esp_ptr -= 1;
+  *esp = esp_ptr;
 
    /* Uncomment the following line to print some debug
      information. This will be useful when you debug the program
