@@ -302,14 +302,15 @@ load (const char *file_name, void (**eip) (void), void **esp)
     printf("%s\n", argv[i]);
   }*/
 
+  printf ("%i\n", ((uint8_t) *esp) % 4);
+  // Put pointers on stack
+  *esp -= ((uint8_t) *esp) % 4;
 /*
-  // Put pointers on stack 
-  *esp -= ((int) *esp) % 4;
   for (i = argc; i > 0; i--) {
-//
+    argv[i];
   }
-  argv[i];
 */
+
    /* Uncomment the following line to print some debug
      information. This will be useful when you debug the program
      stack.*/
