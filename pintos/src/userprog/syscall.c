@@ -167,6 +167,7 @@ void exit (int status) {
   if(t->parent != NULL) {
     t->parent->exit_status = status;
   }
+  printf("%s: exit(%d)\n", t->name, status);
   thread_exit ();
 }
 
