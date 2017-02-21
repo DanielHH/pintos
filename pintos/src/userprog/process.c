@@ -287,14 +287,29 @@ load (const char *file_name, void (**eip) (void), void **esp)
     // Set words and pointers on stack. Remember to increment argc for every argument.
     argv[argc] = token;
 
-    *esp -= strlen(token);
+    *esp -= (strlen(token) + 1);
     esp_copy = (char*) *esp;
     for (i = 0; i < strlen(token); i++) {
-      //
+      *esp_copy = token[i];
+      esp_copy ++;
     }
+    *esp_copy = '\0';
     argc ++;
   }
+  argv[argc + 1] = NULL;
+  /*printf("%i\n", argc);
+  for (i = 0; i < argc; i++) {
+    printf("%s\n", argv[i]);
+  }*/
 
+/*
+  // Put pointers on stack 
+  *esp -= ((int) *esp) % 4;
+  for (i = argc; i > 0; i--) {
+//
+  }
+  argv[i];
+*/
    /* Uncomment the following line to print some debug
      information. This will be useful when you debug the program
      stack.*/
