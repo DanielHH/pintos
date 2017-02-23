@@ -31,6 +31,8 @@ tid_t
 process_execute (const char *file_name)
 {
   char *fn_copy;
+  char *real_fn;
+  char *save_ptr;
   tid_t tid;
 
   struct start_process_info spi;
@@ -53,8 +55,14 @@ process_execute (const char *file_name)
   pc->parent_thread = cur_thread;
   sema_init(&pc->waiter, 0);
 
+  real_fn = palloc_get_page (0);
+  if (real_fn == NULL)
+    return TID_ERROR;
+  strlcpy (real_fn, file_name, PGSIZE);
+  real_fn = strtok_r (real_fn, " ", &save_ptr);
+
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, &spi);
+  tid = thread_create (real_fn, PRI_DEFAULT, start_process, &spi);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
   sema_down(&spi.awake_parent);
@@ -326,6 +334,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* Saves fake "return address on stack */
   esp_ptr -= 1;
   *esp = esp_ptr;
+  file_name = argv[0];
 
    /* Uncomment the following line to print some debug
      information. This will be useful when you debug the program

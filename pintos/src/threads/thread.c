@@ -283,7 +283,7 @@ thread_exit (void)
   struct thread *t = thread_current();
   for (fd = 2; fd < 130; fd++) {
     if (t->open_files[fd-2] != NULL) {
-      close (fd);
+      file_close (t->open_files[fd-2]);
     }
   }
   process_exit ();
