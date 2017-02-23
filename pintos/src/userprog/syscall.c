@@ -1,5 +1,6 @@
 #include "userprog/syscall.h"
 #include <stdio.h>
+#include <string.h>
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
@@ -72,13 +73,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 }
 
 void halt(void) {
-  unsigned fd;
-  struct thread *t = thread_current();
-  for (fd = 2; fd < 130; fd++) {
-    if (t->open_files[fd-2] != NULL) {
-      close (fd);
-    }
-  }
   power_off();
 }
 
@@ -153,12 +147,5 @@ int write (int fd, const void *buffer, unsigned size) {
 }
 
 void exit (int status) {
-  unsigned fd;
-  struct thread *t = thread_current();
-  for (fd = 2; fd < 130; fd++) {
-    if (t->open_files[fd-2] != NULL) {
-      close (fd);
-    }
-  }
   thread_exit ();
 }
