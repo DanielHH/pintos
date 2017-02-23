@@ -76,13 +76,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 }
 
 void halt(void) {
-  unsigned fd;
-  struct thread *t = thread_current();
-  for (fd = 2; fd < 130; fd++) {
-    if (t->open_files[fd-2] != NULL) {
-      close (fd);
-    }
-  }
   power_off();
 }
 
@@ -103,6 +96,7 @@ int open (const char *file) {
       }
     }
   }
+  file_close (cur_file);
   return -1;
 }
 
@@ -157,13 +151,7 @@ int write (int fd, const void *buffer, unsigned size) {
 }
 
 void exit (int status) {
-  unsigned fd;
   struct thread *t = thread_current();
-  for (fd = 2; fd < 130; fd++) {
-    if (t->open_files[fd-2] != NULL) {
-      close (fd);
-    }
-  }
   if(t->parent != NULL) {
     t->parent->exit_status = status;
   }

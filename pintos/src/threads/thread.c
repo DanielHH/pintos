@@ -279,6 +279,13 @@ thread_exit (void)
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
+  unsigned fd;
+  struct thread *t = thread_current();
+  for (fd = 2; fd < 130; fd++) {
+    if (t->open_files[fd-2] != NULL) {
+      close (fd);
+    }
+  }
   process_exit ();
 #endif
   struct thread *cur_thread = thread_current();

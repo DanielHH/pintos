@@ -273,7 +273,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
     goto done;
   }
 
-  /* Set arguments on stack. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+  /* Set arguments on stack. */
   strlcpy (fn_copy, file_name, PGSIZE);
   char *argv[32];
   char *token;
