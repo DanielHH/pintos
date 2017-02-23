@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "threads/malloc.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -184,6 +185,7 @@ thread_create (const char *name, int priority,
   kf->function = function;
   kf->aux = aux;
 
+
   /* Stack frame for switch_entry(). */
   ef = alloc_frame (t, sizeof *ef);
   ef->eip = (void (*) (void)) kernel_thread;
@@ -277,13 +279,13 @@ thread_exit (void)
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
-  unsigned fd;
-  struct thread *t = thread_current();
-  for (fd = 2; fd < 130; fd++) {
-    if (t->open_files[fd-2] != NULL) {
-      close (fd);
-    }
+unsigned fd;
+struct thread *t = thread_current();
+for (fd = 2; fd < 130; fd++) {
+  if (t->open_files[fd-2] != NULL) {
+    file_close (t->open_files[fd-2]);
   }
+}
   process_exit ();
 #endif
 

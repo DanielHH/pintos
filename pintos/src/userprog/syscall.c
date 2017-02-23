@@ -93,6 +93,7 @@ int open (const char *file) {
       }
     }
   }
+  file_close (cur_file);
   return -1;
 }
 
