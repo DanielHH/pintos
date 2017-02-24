@@ -99,7 +99,7 @@ bool is_valid_string (char *ptr) {
   return true;
 }
 
-bool is_valid_buffer (void *buf, unsigned size) {
+bool is_valid_buffer (void *buf, unsigned int size) {
   unsigned int i;
 
   for (i = 0; i < size; i++) {
@@ -119,6 +119,10 @@ void halt(void) {
 }
 
 bool create (const char *file, unsigned int initial_size) {
+
+  if (!is_valid_ptr(file) || !is_valid_string(file)) {
+    thread_exit();
+  }
   return filesys_create (file, initial_size);
 }
 
