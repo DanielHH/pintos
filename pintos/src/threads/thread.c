@@ -315,6 +315,7 @@ thread_exit (void)
     }
     sema_up(&my_parent->counter_lock);
   }
+  printf("%s: exit(%d)\n", cur_thread->name, cur_thread->exit_status);
   /* Just set our status to dying and schedule another process.
      We will be destroyed during the call to schedule_tail(). */
   intr_disable ();

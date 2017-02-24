@@ -9,6 +9,8 @@
 #include "threads/malloc.h"
 #include "devices/input.h"
 #include "userprog/process.h"
+#include "userprog/pagedir.h"
+#include "threads/vaddr.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -75,11 +77,48 @@ syscall_handler (struct intr_frame *f UNUSED)
   }
 }
 
+bool is_valid_ptr (void *ptr) {
+  struct thread *t = thread_current();
+
+  return (pagedir_get_page (t->pagedir, ptr) != NULL && is_user_vaddr (ptr));
+}
+
+bool is_valid_string (char *ptr) {
+  char current_character;
+  current_character = *ptr;
+  ptr++;
+  while (current_character != '\0') {
+    if (!is_valid_ptr(current_character)) {
+      return false;
+    }
+    else {
+      current_character = *ptr;
+      ptr++;
+    }
+  }
+  return true;
+}
+
+bool is_valid_buffer (void *buf, unsigned size) {
+  unsigned int i;
+
+  for (i = 0; i < size; i++) {
+    if (!is_valid_ptr(buf)) {
+      return false;
+    }
+    else {
+      buf++;
+    }
+  }
+  return true;
+}
+
+
 void halt(void) {
   power_off();
 }
 
-bool create (const char *file, unsigned initial_size) {
+bool create (const char *file, unsigned int initial_size) {
   return filesys_create (file, initial_size);
 }
 
@@ -152,10 +191,10 @@ int write (int fd, const void *buffer, unsigned size) {
 
 void exit (int status) {
   struct thread *t = thread_current();
+  t->exit_status = status;
   if(t->parent != NULL) {
     t->parent->exit_status = status;
   }
-  printf("%s: exit(%d)\n", t->name, status);
   thread_exit ();
 }
 
