@@ -120,13 +120,16 @@ void halt(void) {
 
 bool create (const char *file, unsigned int initial_size) {
 
-  if (!is_valid_ptr(file) || !is_valid_string(file)) {
-    thread_exit();
+  if (!is_valid_ptr(file) || !is_valid_string(file) || !is_valid_ptr(&initial_size)) {
+    exit(-1);
   }
   return filesys_create (file, initial_size);
 }
 
 int open (const char *file) {
+  if (!is_valid_ptr(file) || !is_valid_string(file)) {
+    exit(-1);
+  }
   unsigned i;
   struct thread *t = thread_current();
   struct file *cur_file;
@@ -152,6 +155,9 @@ void close (int fd) {
 }
 
 int read (int fd, void *buffer, unsigned size) {
+  if (!is_valid_buffer(buffer, size)) {
+    exit(-1);
+  }
   if(fd == 0) {
     int read_bytes = 0;
     unsigned i;
@@ -173,6 +179,9 @@ int read (int fd, void *buffer, unsigned size) {
 }
 
 int write (int fd, const void *buffer, unsigned size) {
+  if (!is_valid_buffer(buffer, size)) {
+    exit(-1);
+  }
   if (fd == 1) {
     char *char_buffer = (char *) buffer;
     if(strlen(char_buffer) < size) {
@@ -204,6 +213,9 @@ void exit (int status) {
 
 
 pid_t exec (const char *cmd_line) {
+  if (!is_valid_ptr(cmd_line) || !is_valid_string(cmd_line)) {
+    exit(-1);
+  }
   return process_execute(cmd_line);
 }
 
