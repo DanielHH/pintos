@@ -23,9 +23,9 @@ void exit (int status);
 
 int wait (pid_t pid);
 
-bool is_valid_ptr (void *ptr);
+bool is_valid_ptr (const void *ptr);
 
-bool is_valid_string (char *ptr);
+bool is_valid_string (const char *ptr);
 
-bool is_valid_buffer (void *buf, unsigned size);
+bool is_valid_buffer (const void *buf, unsigned size);
 #endif /* userprog/syscall.h */

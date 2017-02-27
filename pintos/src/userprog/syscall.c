@@ -13,6 +13,7 @@
 #include "threads/vaddr.h"
 
 static void syscall_handler (struct intr_frame *);
+bool is_valid_ptr (const void *ptr);
 
 void
 syscall_init (void)
@@ -24,63 +25,68 @@ static void
 syscall_handler (struct intr_frame *f UNUSED)
 {
   int *s = f->esp;
-  switch (*s) {
-    case 0: /* HALT */
-      halt();
-      break;
-    case 1: /* EXIT */
-      exit (*(s+1));
-      break;
-    case 2: /* EXEC */
-      f->eax = exec ((const char *)*(s+1));
-      break;
-    case 3: /* WAIT */
-      f->eax = wait(*(s+1));
-      break;
-    case 4: /* CREATE */
-      f->eax = (uint32_t) create((const char *)*(s+1), *(s+2));
-      break;
-    case 5: /* REMOVE */
-      break;
-    case 6: /* OPEN */
-      f->eax = open((const char *)*(s+1));
-      break;
-    case 7: /* FILESIZE */
-      break;
-    case 8: /* READ */
-      f->eax = read(*(s+1),(void *) *(s+2), *(s+3));
-      break;
-    case 9: /* WRITE */
-      f->eax = write(*(s+1), (const void *) *(s+2), *(s+3));
-      break;
-    case 10: /* SEEK */
-      break;
-    case 11: /* TELL */
-      break;
-    case 12: /* CLOSE */
-      close(*(s+1));
-      break;
-    case 13: /* MMAP */
-      break;
-    case 14: /* MUNMAP */
-      break;
-    case 15: /* CHDIR */
-      break;
-    case 16: /* MKDIR */
-      break;
-    case 17: /* READDIR */
-      break;
-    case 18: /* ISDIR */
-      break;
-    case 19: /* INUMBER */
-      break;
+  if (!is_valid_ptr(s)) {
+    exit(-1);
+  }
+  else {
+    switch (*s) {
+      case 0: /* HALT */
+        halt();
+        break;
+      case 1: /* EXIT */
+        exit (*(s+1));
+        break;
+      case 2: /* EXEC */
+        f->eax = exec ((const char *)*(s+1));
+        break;
+      case 3: /* WAIT */
+        f->eax = wait(*(s+1));
+        break;
+      case 4: /* CREATE */
+        f->eax = (uint32_t) create((const char *)*(s+1), *(s+2));
+        break;
+      case 5: /* REMOVE */
+        break;
+      case 6: /* OPEN */
+        f->eax = open((const char *)*(s+1));
+        break;
+      case 7: /* FILESIZE */
+        break;
+      case 8: /* READ */
+        f->eax = read(*(s+1),(void *) *(s+2), *(s+3));
+        break;
+      case 9: /* WRITE */
+        f->eax = write(*(s+1), (const void *) *(s+2), *(s+3));
+        break;
+      case 10: /* SEEK */
+        break;
+      case 11: /* TELL */
+        break;
+      case 12: /* CLOSE */
+        close(*(s+1));
+        break;
+      case 13: /* MMAP */
+        break;
+      case 14: /* MUNMAP */
+        break;
+      case 15: /* CHDIR */
+        break;
+      case 16: /* MKDIR */
+        break;
+      case 17: /* READDIR */
+        break;
+      case 18: /* ISDIR */
+        break;
+      case 19: /* INUMBER */
+        break;
+    }
   }
 }
 
 bool is_valid_ptr (const void *ptr) {
-  struct thread *t = thread_current();
 
-  return (pagedir_get_page (t->pagedir, ptr) != NULL && is_user_vaddr (ptr));
+  return ((pagedir_get_page (thread_current()->pagedir, ptr) != NULL)
+    && is_user_vaddr (ptr));
 }
 
 bool is_valid_string (const char *ptr) {
@@ -120,16 +126,18 @@ void halt(void) {
 
 bool create (const char *file, unsigned int initial_size) {
 
-  if (!is_valid_ptr(file) || !is_valid_string(file) || !is_valid_ptr(&initial_size)) {
+  if (!is_valid_ptr(file) || !is_valid_string(file)) {
     exit(-1);
   }
   return filesys_create (file, initial_size);
 }
 
 int open (const char *file) {
+  //printf("start open!!!!!!");
   if (!is_valid_ptr(file) || !is_valid_string(file)) {
     exit(-1);
   }
+  //printf("in open!!!!!!");
   unsigned i;
   struct thread *t = thread_current();
   struct file *cur_file;
