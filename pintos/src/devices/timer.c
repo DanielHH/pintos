@@ -31,6 +31,8 @@ static void real_time_sleep (int64_t num, int32_t denom);
 static void list_insert_ordered_wake_up_tick (struct list *, struct list_elem *);
 
 struct list sleeping_threads;
+//struct semaphore lock_sleeping_threads;
+
 /* Sets up the 8254 Programmable Interval Timer (PIT) to
    interrupt PIT_FREQ times per second, and registers the
    corresponding interrupt. */

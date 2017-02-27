@@ -77,13 +77,13 @@ syscall_handler (struct intr_frame *f UNUSED)
   }
 }
 
-bool is_valid_ptr (void *ptr) {
+bool is_valid_ptr (const void *ptr) {
   struct thread *t = thread_current();
 
   return (pagedir_get_page (t->pagedir, ptr) != NULL && is_user_vaddr (ptr));
 }
 
-bool is_valid_string (char *ptr) {
+bool is_valid_string (const char *ptr) {
   char current_character;
   current_character = *ptr;
   ptr++;
@@ -99,7 +99,7 @@ bool is_valid_string (char *ptr) {
   return true;
 }
 
-bool is_valid_buffer (void *buf, unsigned int size) {
+bool is_valid_buffer (const void *buf, unsigned int size) {
   unsigned int i;
 
   for (i = 0; i < size; i++) {
