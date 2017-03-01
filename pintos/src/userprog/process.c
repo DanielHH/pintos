@@ -283,46 +283,53 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Set arguments on stack. */
   strlcpy (fn_copy, file_name, PGSIZE);
+  char *argv_string_saver[32];
   char *argv[32];
   char *token;
   char *save_ptr;
   char *esp_copy;
   int argc = 0;
+  uint8_t j;
   uintptr_t *esp_ptr;
   uintptr_t *argv_saver;
 
   for (token = strtok_r (fn_copy, " ", &save_ptr);
       token != NULL;
       token = strtok_r (NULL, " ", &save_ptr)) {
-    argv[argc] = token;
+    argv_string_saver[argc] = token;
+    argc ++;
+  }
 
-    *esp -= (strlen(token) + 1);
-    esp_copy = (char*) *esp;
-    argv[argc] = esp_copy;
-    for (i = 0; i < strlen(token); i++) {
-      *esp_copy = token[i];
+  for (i = 0; i < argc; i++) {
+    *esp -= (strlen(argv_string_saver[i]) + 1);
+  }
+
+  esp_copy = (char*) *esp;
+  for (i = 0; i < argc; i++) {
+    argv[i] = esp_copy;
+    for (j = 0; j < strlen(argv_string_saver[i]); j++) {
+      *esp_copy = argv_string_saver[i][j];
       esp_copy ++;
     }
     *esp_copy = '\0';
-    argc ++;
+    esp_copy ++;
   }
-  argv[argc + 1] = NULL;
 
   /* Wordalign */
-  *esp -= ((uint8_t) *esp) % 4;
+  *esp -= ((uintptr_t) *esp) % 4;
 
   /* Put pointers on stack */
-  esp_ptr = (uintptr_t) *esp;
+  esp_ptr = (uintptr_t *) *esp;
 
   for (i = argc; i >= 0; i--) {
     esp_ptr -= 1;
-    *esp_ptr = argv[i];
+    *esp_ptr = (uintptr_t) argv[i];
   }
 
   /* Saves argv on stack */
   argv_saver = esp_ptr; // Save current address (which is now the adress of argv[0])
   esp_ptr -= 1;
-  *esp_ptr = argv_saver;
+  *esp_ptr = (uintptr_t) argv_saver;
   *esp = esp_ptr;
 
   /* Saves argc on stack */
@@ -339,7 +346,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
    /* Uncomment the following line to print some debug
      information. This will be useful when you debug the program
      stack.*/
-/*#define STACK_DEBUG*/
+//#define STACK_DEBUG
 
 #ifdef STACK_DEBUG
   printf("*esp is %p\nstack contents:\n", *esp);
