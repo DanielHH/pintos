@@ -85,8 +85,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 
 bool is_valid_ptr (const void *ptr) {
 
-  return ((pagedir_get_page (thread_current()->pagedir, ptr) != NULL)
-    && is_user_vaddr (ptr));
+  return (is_user_vaddr (ptr) && (pagedir_get_page (thread_current()->pagedir, ptr) != NULL));
 }
 /*
 bool is_valid_string (const char *ptr) {
@@ -177,7 +176,7 @@ void close (int fd) {
 }
 
 int read (int fd, void *buffer, unsigned size) {
-  if (!is_valid_buffer(buffer, size)) {
+  if (!is_valid_ptr(buffer) || !is_valid_buffer(buffer, size)) {
     exit(-1);
   }
   if(fd == 0) {
@@ -188,6 +187,7 @@ int read (int fd, void *buffer, unsigned size) {
       buffer = &read_byte;
       read_bytes++;
       buffer += 1;
+
     }
     return read_bytes;
   }

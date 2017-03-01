@@ -133,13 +133,14 @@ start_process (void *aux)
 int
 process_wait (tid_t child_tid UNUSED)
 {
-  struct thread *cur_thread = thread_current ();
+  struct thread *t = thread_current ();
   struct list_elem *e;
+  struct parent_child *pc;
   int exit_status;
 
-  for (e = list_begin (&cur_thread->children); e != list_end (&cur_thread->children);
+  for (e = list_begin (&t->children); e != list_end (&t->children);
        e = list_next (e)) {
-      struct parent_child *pc = list_entry (e, struct parent_child, elem);
+      pc = list_entry (e, struct parent_child, elem);
       if (pc->child_pid == child_tid) {
         sema_down(&pc->waiter);
         exit_status = pc->exit_status;
@@ -298,6 +299,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   uintptr_t *esp_ptr;
   uintptr_t *argv_saver;
 
+  //split arguments and assign a pointer to each.
   for (token = strtok_r (fn_copy, " ", &save_ptr);
       token != NULL;
       token = strtok_r (NULL, " ", &save_ptr)) {
@@ -305,10 +307,12 @@ load (const char *file_name, void (**eip) (void), void **esp)
     argc ++;
   }
 
+  //move stackpointer to bottom of all arguments.
   for (i = 0; i < argc; i++) {
     *esp -= (strlen(argv_string_saver[i]) + 1);
   }
 
+  //place arguments on stack
   esp_copy = (char*) *esp;
   for (i = 0; i < argc; i++) {
     argv[i] = esp_copy;

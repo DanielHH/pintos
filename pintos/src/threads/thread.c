@@ -277,13 +277,15 @@ void
 thread_exit (void)
 {
   ASSERT (!intr_context ());
+  struct thread *t = thread_current();
+  struct list_elem *e;
+  struct parent_child *pc;
 
 #ifdef USERPROG
   //printf("This thread is exiting: ");
   //printf("%s\n", thread_current()->name);
   //printf("%d\n", __LINE__);
   unsigned fd;
-  struct thread *t = thread_current();
   for (fd = 2; fd < 130; fd++) {
     if (t->open_files[fd-2] != NULL) {
       file_close (t->open_files[fd-2]);
@@ -291,14 +293,12 @@ thread_exit (void)
   }
   process_exit ();
 #endif
-  struct thread *cur_thread = thread_current();
 
-  struct list_elem *e;
-
-  for (e = list_begin (&cur_thread->children); e != list_end (&cur_thread->children);
+  // If this thread's
+  for (e = list_begin (&t->children); e != list_end (&t->children);
        e = list_next (e))
     {
-      struct parent_child *pc = list_entry (e, struct parent_child, elem);
+      pc = list_entry (e, struct parent_child, elem);
       sema_down(&pc->counter_lock);
       pc->alive_count --;
       if (pc->alive_count <= 0) {
@@ -306,7 +306,9 @@ thread_exit (void)
       }
       sema_up(&pc->counter_lock);
     }
-  struct parent_child *my_parent = cur_thread->parent;
+
+
+  struct parent_child *my_parent = t->parent;
   if(my_parent != NULL) {
     if(my_parent->waiter.value == 0) {
       sema_up(&my_parent->waiter);
@@ -318,7 +320,7 @@ thread_exit (void)
     }
     sema_up(&my_parent->counter_lock);
   }
-  printf("%s: exit(%d)\n", cur_thread->name, cur_thread->exit_status);
+  printf("%s: exit(%d)\n", t->name, t->exit_status);
   /* Just set our status to dying and schedule another process.
      We will be destroyed during the call to schedule_tail(). */
   intr_disable ();
@@ -475,7 +477,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
-  list_init(&t->children);
+  list_init(&(t->children));
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
