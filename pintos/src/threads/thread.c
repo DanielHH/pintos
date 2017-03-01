@@ -279,6 +279,9 @@ thread_exit (void)
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
+  //printf("This thread is exiting: ");
+  //printf("%s\n", thread_current()->name);
+  //printf("%d\n", __LINE__);
   unsigned fd;
   struct thread *t = thread_current();
   for (fd = 2; fd < 130; fd++) {

@@ -7,6 +7,7 @@
 #include "threads/io.h"
 #include "threads/thread.h"
 #include "threads/malloc.h"
+#include "threads/synch.h"
 
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -31,9 +32,6 @@ static void real_time_sleep (int64_t num, int32_t denom);
 static void list_insert_ordered_wake_up_tick (struct list *, struct list_elem *);
 
 struct list sleeping_threads;
-struct semaphore lock_sleeping_threads;
-//struct semaphore lock_sleeping_threads;
-
 /* Sets up the 8254 Programmable Interval Timer (PIT) to
    interrupt PIT_FREQ times per second, and registers the
    corresponding interrupt. */
@@ -41,7 +39,6 @@ void
 timer_init (void)
 {
   list_init(&sleeping_threads);
-  sema_init(&lock_sleeping_threads, 1);
   /* 8254 input frequency divided by TIMER_FREQ, rounded to
      nearest. */
   uint16_t count = (1193180 + TIMER_FREQ / 2) / TIMER_FREQ;
@@ -104,14 +101,13 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks)
 {
-
   ASSERT (intr_get_level () == INTR_ON);
   struct sleeper sleep;
   sleep.wake_up_tick = timer_ticks() + ticks;
   sema_init(&(sleep.sema), 0);
-  sema_down(&lock_sleeping_threads);
+  enum intr_level old_level = intr_disable();
   list_insert_ordered_wake_up_tick(&sleeping_threads, &(sleep.elem));
-  sema_up(&lock_sleeping_threads);
+  intr_set_level(old_level);
   sema_down(&(sleep.sema));
 }
 
@@ -149,19 +145,18 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
-  if (sema_try_down(&lock_sleeping_threads)) {
-    while(!list_empty(&sleeping_threads)){
-      struct sleeper *sleep = list_entry(list_begin(&sleeping_threads), struct sleeper, elem);
-      if (sleep->wake_up_tick <= timer_ticks()) {
-        sleep = list_entry(list_pop_front(&sleeping_threads), struct sleeper, elem);
-        sema_up(&(sleep->sema));
-      }
-      else {
-        break;
-      }
+  enum intr_level old_level = intr_disable();
+  while(!list_empty(&sleeping_threads)){
+    struct sleeper *sleep = list_entry(list_begin(&sleeping_threads), struct sleeper, elem);
+    if (sleep->wake_up_tick <= timer_ticks()) {
+      sleep = list_entry(list_pop_front(&sleeping_threads), struct sleeper, elem);
+      sema_up(&(sleep->sema));
     }
-    sema_up(&lock_sleeping_threads);
+    else {
+      break;
+    }
   }
+  intr_set_level(old_level);
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

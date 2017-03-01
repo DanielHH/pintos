@@ -88,20 +88,37 @@ bool is_valid_ptr (const void *ptr) {
   return ((pagedir_get_page (thread_current()->pagedir, ptr) != NULL)
     && is_user_vaddr (ptr));
 }
-
+/*
 bool is_valid_string (const char *ptr) {
+  char *ptr_copy = (char *) ptr;
   char current_character;
-  current_character = *ptr;
-  ptr++;
+  current_character = *ptr_copy;
   while (current_character != '\0') {
     if (!is_valid_ptr(current_character)) {
+      printf("%d\n", __LINE__);
       return false;
     }
     else {
-      current_character = *ptr;
-      ptr++;
+      printf("%d\n", __LINE__);
+      ptr_copy ++;
+      current_character = *ptr_copy;
     }
   }
+  return true;
+}
+*/
+bool is_valid_string (const char *ptr) {
+  char current_character = *ptr;
+  do {
+      if (!is_valid_ptr(ptr)) {
+        //printf("%d\n", __LINE__);
+        return false;
+      }
+      else {
+        current_character = *ptr;
+        ptr ++;
+      }
+    } while (current_character != '\0');
   return true;
 }
 
@@ -125,7 +142,6 @@ void halt(void) {
 }
 
 bool create (const char *file, unsigned int initial_size) {
-
   if (!is_valid_ptr(file) || !is_valid_string(file)) {
     exit(-1);
   }
@@ -133,11 +149,9 @@ bool create (const char *file, unsigned int initial_size) {
 }
 
 int open (const char *file) {
-  //printf("start open!!!!!!");
   if (!is_valid_ptr(file) || !is_valid_string(file)) {
     exit(-1);
   }
-  //printf("in open!!!!!!");
   unsigned i;
   struct thread *t = thread_current();
   struct file *cur_file;
