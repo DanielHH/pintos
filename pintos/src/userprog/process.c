@@ -56,10 +56,11 @@ process_execute (const char *cmd_line)
   sema_init(&pc->counter_lock, 1);
   sema_init(&pc->waiter, 0);
   pc->parent_thread = t;
+  pc->parent_pid = t->tid;
 
   //Fill spi
   sema_init(&spi.awake_parent, 0);
-  spi.console = cmd_copy;
+  spi.cmd_line = cmd_copy;
   spi.parent_child = pc;
 
   /* Create a new thread to execute FILE_NAME. */
@@ -84,9 +85,11 @@ static void
 start_process (void *aux)
 {
   struct start_process_info *spi = (struct start_process_info *) aux;
-  struct thread *cur_thread = thread_current();
-  cur_thread->parent = spi->parent_child;
-  char *file_name = spi->console;
+  struct thread *t = thread_current();
+  t->parent = spi->parent_child;
+  t->parent->child_thread = t;
+  t->parent->child_pid = t->tid;
+  char *cmd_line = spi->cmd_line;
   struct intr_frame if_;
   bool success;
 
@@ -98,13 +101,13 @@ start_process (void *aux)
   if_.eflags = FLAG_IF | FLAG_MBS;
 
   /* loads */
-  success = load (file_name, &if_.eip, &if_.esp);
+  success = load (cmd_line, &if_.eip, &if_.esp);
 
   spi->load_success = success;
   sema_up(&spi->awake_parent);
 
   /* If load failed, quit. */
-  palloc_free_page (file_name);
+  palloc_free_page (cmd_line);
   if (!success)
     thread_exit ();
 
