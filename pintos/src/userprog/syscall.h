@@ -28,4 +28,13 @@ bool is_valid_ptr (const void *ptr);
 bool is_valid_string (const char *ptr);
 
 bool is_valid_buffer (const void *buf, unsigned size);
+
+void seek (int fd, unsigned position);
+
+unsigned tell (int fd);
+
+int filesize (int fd);
+
+bool remove (const char *file_name);
+
 #endif /* userprog/syscall.h */

@@ -58,6 +58,10 @@ syscall_handler (struct intr_frame *f UNUSED)
         f->eax = (uint32_t) create((const char *)*(s+1), *(s+2));
         break;
       case 5: /* REMOVE */
+        if (!is_valid_ptr(s+1)) {
+          exit(-1);
+        }
+        f->eax = remove ((const char *)*(s+1));
         break;
       case 6: /* OPEN */
         if (!is_valid_ptr(s+1)) {
@@ -66,6 +70,10 @@ syscall_handler (struct intr_frame *f UNUSED)
         f->eax = open((const char *)*(s+1));
         break;
       case 7: /* FILESIZE */
+        if (!is_valid_ptr(s+1)) {
+          exit(-1);
+        }
+        f->eax = filesize (*(s+1));
         break;
       case 8: /* READ */
         if (!is_valid_ptr(s+1) || !is_valid_ptr(s+2) || !is_valid_ptr(s+3)) {
@@ -80,8 +88,16 @@ syscall_handler (struct intr_frame *f UNUSED)
         f->eax = write(*(s+1), (const void *) *(s+2), *(s+3));
         break;
       case 10: /* SEEK */
+        if (!is_valid_ptr(s+1) || !is_valid_ptr(s+2)) {
+          exit(-1);
+        }
+        seek (*(s+1), (unsigned) *(s+2));
         break;
       case 11: /* TELL */
+        if (!is_valid_ptr(s+1)) {
+          exit(-1);
+        }
+        f->eax = tell (*(s+1));
         break;
       case 12: /* CLOSE */
         if (!is_valid_ptr(s+1)) {
@@ -247,4 +263,55 @@ pid_t exec (const char *cmd_line) {
 
 int wait (pid_t pid) {
   return process_wait(pid);
+}
+
+void seek (int fd, unsigned position) {
+  if(fd > 1 && fd < 130) {
+    struct thread *t = thread_current();
+    struct file *file;
+    if(t->open_files[fd-2] != NULL) {
+      file = t->open_files[fd-2];
+      if ((unsigned) file_length(file) < position) {
+        file_seek(file, file_length(file));
+      }
+      else {
+        file_seek(file, position);
+      }
+    }
+  }
+}
+
+unsigned tell (int fd) {
+  if(fd > 1 && fd < 130) {
+    struct thread *t = thread_current();
+    struct file *file;
+    if(t->open_files[fd-2] != NULL) {
+      file = t->open_files[fd-2];
+      return (unsigned) file_tell(file);
+    }
+  }
+  return -1;
+}
+
+int filesize (int fd) {
+  if(fd > 1 && fd < 130) {
+    struct thread *t = thread_current();
+    struct file *file;
+    if(t->open_files[fd-2] != NULL) {
+      file = t->open_files[fd-2];
+      return file_length(file);
+    }
+  }
+  return -1;
+}
+
+bool remove (const char *file_name) {
+  if(fd > 1 && fd < 130) {
+    struct thread *t = thread_current();
+    struct file *file;
+    
+
+  }
+  return -1;
+
 }
