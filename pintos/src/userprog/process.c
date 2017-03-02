@@ -34,7 +34,7 @@ process_execute (const char *cmd_line)
   char *file_name;
   char *save_ptr;
   tid_t tid;
-  struct start_process_info spi;
+  struct start_process_info *spi = (struct start_process_info *) malloc(sizeof(struct start_process_info));
   struct parent_child *pc = (struct parent_child *) malloc(sizeof(struct parent_child));
   struct thread *t = thread_current();
 
@@ -59,21 +59,24 @@ process_execute (const char *cmd_line)
   pc->parent_pid = t->tid;
 
   //Fill spi
-  sema_init(&spi.awake_parent, 0);
-  spi.cmd_line = cmd_copy;
-  spi.parent_child = pc;
-
+  sema_init(&spi->awake_parent, 0);
+  spi->cmd_line = cmd_copy;
+  spi->parent_child = pc;
+  
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, &spi);
-  if (tid == TID_ERROR)
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, spi);
+  palloc_free_page (file_name);
+  if (tid == TID_ERROR) {
     palloc_free_page (cmd_copy);
-    palloc_free_page (file_name);
-  sema_down(&spi.awake_parent);
-  if (spi.load_success) {
+  }
+  sema_down(&spi->awake_parent);
+  if (spi->load_success) {
     list_push_back(&(t->children), &(pc->elem));
+    free(spi);
     return tid;
   }
   else {
+    free(spi);
     free(pc);
     return TID_ERROR;
   }
@@ -88,10 +91,9 @@ start_process (void *aux)
   struct thread *t = thread_current();
   t->parent = spi->parent_child;
   t->parent->child_thread = t;
-  t->parent->child_pid = t->tid;
   char *cmd_line = spi->cmd_line;
   struct intr_frame if_;
-  bool success;
+  bool success = false;
 
 
   /* Initialize interrupt frame and load executable. */
@@ -102,8 +104,9 @@ start_process (void *aux)
 
   /* loads */
   success = load (cmd_line, &if_.eip, &if_.esp);
-
   spi->load_success = success;
+  t->load_success = success;
+  t->parent->child_pid = t->tid;
   sema_up(&spi->awake_parent);
 
   /* If load failed, quit. */
@@ -142,6 +145,9 @@ process_wait (tid_t child_tid UNUSED)
        e = list_next (e)) {
       pc = list_entry (e, struct parent_child, elem);
       if (pc->child_pid == child_tid) {
+        if(pc->exit_status == -1) {
+          return -1;
+        }
         sema_down(&pc->waiter);
         exit_status = pc->exit_status;
         pc->exit_status = -1;

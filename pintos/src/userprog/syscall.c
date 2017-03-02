@@ -34,28 +34,49 @@ syscall_handler (struct intr_frame *f UNUSED)
         halt();
         break;
       case 1: /* EXIT */
+        if (!is_valid_ptr(s+1)) {
+          exit(-1);
+        }
         exit (*(s+1));
         break;
       case 2: /* EXEC */
+        if (!is_valid_ptr(s+1)) {
+          exit(-1);
+        }
         f->eax = exec ((const char *)*(s+1));
         break;
       case 3: /* WAIT */
+        if (!is_valid_ptr(s+1)) {
+          exit(-1);
+        }
         f->eax = wait(*(s+1));
         break;
       case 4: /* CREATE */
+        if (!is_valid_ptr(s+1) || !is_valid_ptr(s+2)) {
+          exit(-1);
+        }
         f->eax = (uint32_t) create((const char *)*(s+1), *(s+2));
         break;
       case 5: /* REMOVE */
         break;
       case 6: /* OPEN */
+        if (!is_valid_ptr(s+1)) {
+          exit(-1);
+        }
         f->eax = open((const char *)*(s+1));
         break;
       case 7: /* FILESIZE */
         break;
       case 8: /* READ */
+        if (!is_valid_ptr(s+1) || !is_valid_ptr(s+2) || !is_valid_ptr(s+3)) {
+          exit(-1);
+        }
         f->eax = read(*(s+1),(void *) *(s+2), *(s+3));
         break;
       case 9: /* WRITE */
+        if (!is_valid_ptr(s+1) || !is_valid_ptr(s+2) || !is_valid_ptr(s+3)) {
+          exit(-1);
+        }
         f->eax = write(*(s+1), (const void *) *(s+2), *(s+3));
         break;
       case 10: /* SEEK */
@@ -63,6 +84,9 @@ syscall_handler (struct intr_frame *f UNUSED)
       case 11: /* TELL */
         break;
       case 12: /* CLOSE */
+        if (!is_valid_ptr(s+1)) {
+          exit(-1);
+        }
         close(*(s+1));
         break;
       case 13: /* MMAP */
@@ -84,33 +108,13 @@ syscall_handler (struct intr_frame *f UNUSED)
 }
 
 bool is_valid_ptr (const void *ptr) {
-
   return (is_user_vaddr (ptr) && (pagedir_get_page (thread_current()->pagedir, ptr) != NULL));
 }
-/*
-bool is_valid_string (const char *ptr) {
-  char *ptr_copy = (char *) ptr;
-  char current_character;
-  current_character = *ptr_copy;
-  while (current_character != '\0') {
-    if (!is_valid_ptr(current_character)) {
-      printf("%d\n", __LINE__);
-      return false;
-    }
-    else {
-      printf("%d\n", __LINE__);
-      ptr_copy ++;
-      current_character = *ptr_copy;
-    }
-  }
-  return true;
-}
-*/
+
 bool is_valid_string (const char *ptr) {
   char current_character = *ptr;
   do {
       if (!is_valid_ptr(ptr)) {
-        //printf("%d\n", __LINE__);
         return false;
       }
       else {

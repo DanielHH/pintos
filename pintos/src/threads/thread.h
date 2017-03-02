@@ -106,6 +106,7 @@ struct thread
     struct list children;
     struct parent_child *parent;
     int exit_status;
+    bool load_success;
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };

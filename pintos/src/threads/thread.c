@@ -169,7 +169,6 @@ thread_create (const char *name, int priority,
   tid_t tid;
 
   ASSERT (function != NULL);
-
   /* Allocate thread. */
   t = palloc_get_page (PAL_ZERO);
   if (t == NULL)
@@ -178,13 +177,11 @@ thread_create (const char *name, int priority,
   /* Initialize thread. */
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
-
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
   kf->eip = NULL;
   kf->function = function;
   kf->aux = aux;
-
 
   /* Stack frame for switch_entry(). */
   ef = alloc_frame (t, sizeof *ef);
@@ -279,12 +276,13 @@ thread_exit (void)
   ASSERT (!intr_context ());
   struct thread *t = thread_current();
   struct list_elem *e;
+  struct list_elem *e_copy;
   struct parent_child *pc;
+  if (!t->load_success) {
+    t->exit_status = -1;
+  }
 
 #ifdef USERPROG
-  //printf("This thread is exiting: ");
-  //printf("%s\n", thread_current()->name);
-  //printf("%d\n", __LINE__);
   unsigned fd;
   for (fd = 2; fd < 130; fd++) {
     if (t->open_files[fd-2] != NULL) {
@@ -294,19 +292,22 @@ thread_exit (void)
   process_exit ();
 #endif
 
-  // If this thread's
-  for (e = list_begin (&t->children); e != list_end (&t->children);
-       e = list_next (e))
-    {
-      pc = list_entry (e, struct parent_child, elem);
-      sema_down(&pc->counter_lock);
-      pc->alive_count --;
-      if (pc->alive_count <= 0) {
-        free(pc);
-      }
-      sema_up(&pc->counter_lock);
+  e = list_begin(&t->children);
+  while (e != list_end (&t->children)) {
+    pc = list_entry (e, struct parent_child, elem);
+    e_copy = e;
+    sema_down(&pc->counter_lock);
+    pc->alive_count --;
+    if (pc->alive_count <= 0) {
+      e = list_next(e);
+      list_remove(e_copy);
+      free(pc);
     }
-
+    else {
+      sema_up(&pc->counter_lock);
+      e = list_next(e);
+    }
+  }
 
   struct parent_child *my_parent = t->parent;
   if(my_parent != NULL) {
@@ -318,7 +319,9 @@ thread_exit (void)
     if (my_parent->alive_count <= 0) {
       free(my_parent);
     }
-    sema_up(&my_parent->counter_lock);
+    else {
+      sema_up(&my_parent->counter_lock);
+    }
   }
   printf("%s: exit(%d)\n", t->name, t->exit_status);
   /* Just set our status to dying and schedule another process.
