@@ -6,6 +6,7 @@
 #include "filesys/filesys.h"
 #include "filesys/free-map.h"
 #include "threads/malloc.h"
+#include "threads/synch.h"
 
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
@@ -37,6 +38,9 @@ struct inode
     bool removed;                       /* True if deleted, false otherwise. */
     int deny_write_cnt;                 /* 0: writes ok, >0: deny writes. */
     struct inode_disk data;             /* Inode content. */
+    struct semaphore write_lock;
+    struct lock inode_lock;
+    int read_cnt;
   };
 
 /* Returns the disk sector that contains byte offset POS within
@@ -137,6 +141,9 @@ inode_open (disk_sector_t sector)
   inode->open_cnt = 1;
   inode->deny_write_cnt = 0;
   inode->removed = false;
+  sema_init (&write_lock, 1);
+  lock_init (&inode_lock);
+  inode->read_cnt = 0;
   disk_read (filesys_disk, inode->sector, &inode->data);
   return inode;
 }
@@ -207,6 +214,13 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
   off_t bytes_read = 0;
   uint8_t *bounce = NULL;
 
+  lock_acquire (&inode_lock);
+  inode->read_cnt ++;
+  if (read_cnt == 1) {
+    sema_down (write_lock);
+  }
+  lock_release (&inode_lock);
+
   while (size > 0)
     {
       /* Disk sector to read, starting byte offset within sector. */
@@ -249,6 +263,13 @@ inode_read_at (struct inode *inode, void *buffer_, off_t size, off_t offset)
     }
   free (bounce);
 
+  lock_acquire (&inode_lock);
+  inode->read_cnt --;
+  if (read_cnt == 0) {
+    sema_up (write_lock);
+  }
+  lock_release (&inode_lock);
+
   return bytes_read;
 }
 
@@ -267,6 +288,8 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
 
   if (inode->deny_write_cnt)
     return 0;
+
+  sema_down(&write_lock);
 
   while (size > 0)
     {
@@ -316,6 +339,8 @@ inode_write_at (struct inode *inode, const void *buffer_, off_t size,
       bytes_written += chunk_size;
     }
   free (bounce);
+
+  sema_up(&write_lock);
 
   return bytes_written;
 }

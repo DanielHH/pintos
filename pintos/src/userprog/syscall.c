@@ -306,12 +306,5 @@ int filesize (int fd) {
 }
 
 bool remove (const char *file_name) {
-  if(fd > 1 && fd < 130) {
-    struct thread *t = thread_current();
-    struct file *file;
-    
-
-  }
-  return -1;
-
+  return filesys_remove(file_name);
 }
