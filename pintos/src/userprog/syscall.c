@@ -306,5 +306,8 @@ int filesize (int fd) {
 }
 
 bool remove (const char *file_name) {
+  if (!is_valid_ptr(file_name) || !is_valid_string(file_name)) {
+    exit(-1);
+  }
   return filesys_remove(file_name);
 }

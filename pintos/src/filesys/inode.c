@@ -60,12 +60,14 @@ byte_to_sector (const struct inode *inode, off_t pos)
 /* List of open inodes, so that opening a single inode twice
    returns the same `struct inode'. */
 static struct list open_inodes;
+static struct semaphore open_close_lock;
 
 /* Initializes the inode module. */
 void
 inode_init (void)
 {
   list_init (&open_inodes);
+  sema_init (&open_close_lock, 1);
 }
 
 /* Initializes an inode with LENGTH bytes of data and
@@ -119,6 +121,7 @@ inode_open (disk_sector_t sector)
   struct inode *inode;
 
   /* Check whether this inode is already open. */
+  sema_down(&open_close_lock);
   for (e = list_begin (&open_inodes); e != list_end (&open_inodes);
        e = list_next (e))
     {
@@ -126,14 +129,17 @@ inode_open (disk_sector_t sector)
       if (inode->sector == sector)
         {
           inode_reopen (inode);
+          sema_up(&open_close_lock);
           return inode;
         }
     }
 
   /* Allocate memory. */
   inode = malloc (sizeof *inode);
-  if (inode == NULL)
+  if (inode == NULL) {
+    sema_up(&open_close_lock);
     return NULL;
+  }
 
   /* Initialize. */
   list_push_front (&open_inodes, &inode->elem);
@@ -145,6 +151,7 @@ inode_open (disk_sector_t sector)
   lock_init (&inode->inode_lock);
   inode->read_cnt = 0;
   disk_read (filesys_disk, inode->sector, &inode->data);
+  sema_up(&open_close_lock);
   return inode;
 }
 
@@ -173,10 +180,12 @@ inode_get_inumber (const struct inode *inode)
 void
 inode_close (struct inode *inode)
 {
+
   /* Ignore null pointer. */
   if (inode == NULL)
     return;
 
+  sema_down(&open_close_lock);
   /* Release resources if this was the last opener. */
   if (--inode->open_cnt == 0)
     {
@@ -193,6 +202,7 @@ inode_close (struct inode *inode)
 
       free (inode);
     }
+  sema_up(&open_close_lock);
 }
 
 /* Marks INODE to be deleted when it is closed by the last caller who
