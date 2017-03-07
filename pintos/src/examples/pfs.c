@@ -8,7 +8,7 @@ int main(void)
   create("file.1", 50000);
   create("messages", 5000);
 
-  pid[0] = exec("pfs_writer a z");
+  pid[0] = exec("pfs_writer a z"); 
   pid[1] = exec("pfs_writer A Z");
   pid[2] = exec("pfs_reader");
   pid[3] = exec("pfs_reader");

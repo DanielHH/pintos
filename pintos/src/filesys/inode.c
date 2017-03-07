@@ -363,6 +363,7 @@ inode_deny_write (struct inode *inode)
   //lock?
   inode->deny_write_cnt++;
   ASSERT (inode->deny_write_cnt <= inode->open_cnt);
+  //unlock??
 }
 
 /* Re-enables writes to INODE.
@@ -375,6 +376,7 @@ inode_allow_write (struct inode *inode)
   ASSERT (inode->deny_write_cnt > 0);
   ASSERT (inode->deny_write_cnt <= inode->open_cnt);
   inode->deny_write_cnt--;
+  //unlock??
 }
 
 /* Returns the length, in bytes, of INODE's data. */

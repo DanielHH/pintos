@@ -75,10 +75,11 @@ filesys_open (const char *name)
 {
   struct dir *dir = dir_open_root ();
   struct inode *inode = NULL;
-
+  sema_down(&filesys_sema);
   if (dir != NULL)
     dir_lookup (dir, name, &inode);
   dir_close (dir);
+  sema_up(&filesys_sema);
 
   return file_open (inode);
 }
@@ -90,9 +91,13 @@ filesys_open (const char *name)
 bool
 filesys_remove (const char *name)
 {
+
+  sema_down(&filesys_sema);
   struct dir *dir = dir_open_root ();
   bool success = dir != NULL && dir_remove (dir, name);
   dir_close (dir);
+
+  sema_up(&filesys_sema);
 
   return success;
 }
