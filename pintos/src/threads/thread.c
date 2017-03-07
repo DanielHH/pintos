@@ -278,7 +278,7 @@ thread_exit (void)
   struct list_elem *e;
   struct list_elem *e_copy;
   struct parent_child *pc;
-  if (!t->load_success) {
+  if (!(t->load_success)) {
     t->exit_status = -1;
   }
 
@@ -480,6 +480,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+  t->load_success = true;
   list_init(&(t->children));
 }
 

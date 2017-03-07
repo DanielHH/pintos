@@ -62,7 +62,7 @@ process_execute (const char *cmd_line)
   sema_init(&spi->awake_parent, 0);
   spi->cmd_line = cmd_copy;
   spi->parent_child = pc;
-  
+
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, spi);
   palloc_free_page (file_name);
@@ -111,8 +111,9 @@ start_process (void *aux)
 
   /* If load failed, quit. */
   palloc_free_page (cmd_line);
-  if (!success)
+  if (!success) {
     thread_exit ();
+  }
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
