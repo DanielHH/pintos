@@ -7,9 +7,12 @@
 #include "filesys/inode.h"
 #include "filesys/directory.h"
 #include "devices/disk.h"
+#include "threads/synch.h"
 
 /* The disk that contains the file system. */
 struct disk *filesys_disk;
+
+static struct semaphore filesys_sema;
 
 static void do_format (void);
 
@@ -22,6 +25,7 @@ filesys_init (bool format)
   if (filesys_disk == NULL)
     PANIC ("hd0:1 (hdb) not present, file system initialization failed");
 
+  sema_init (&filesys_sema, 1);
   inode_init ();
   free_map_init ();
 
@@ -46,6 +50,7 @@ filesys_done (void)
 bool
 filesys_create (const char *name, off_t initial_size)
 {
+  sema_down(&filesys_sema);
   disk_sector_t inode_sector = 0;
   struct dir *dir = dir_open_root ();
   bool success = (dir != NULL
@@ -56,6 +61,7 @@ filesys_create (const char *name, off_t initial_size)
     free_map_release (inode_sector, 1);
   dir_close (dir);
 
+  sema_up(&filesys_sema);
   return success;
 }
 
