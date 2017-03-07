@@ -124,10 +124,14 @@ dir_lookup (const struct dir *dir, const char *name,
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
 
+  //lock?
+
   if (lookup (dir, name, &e, NULL))
     *inode = inode_open (e.inode_sector);
   else
     *inode = NULL;
+
+  //unlock??
 
   return *inode != NULL;
 }
@@ -147,6 +151,8 @@ dir_add (struct dir *dir, const char *name, disk_sector_t inode_sector)
 
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
+
+  //lock??
 
   /* Check NAME for validity. */
   if (*name == '\0' || strlen (name) > NAME_MAX)
@@ -175,6 +181,7 @@ dir_add (struct dir *dir, const char *name, disk_sector_t inode_sector)
   success = inode_write_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
 
  done:
+  //unlock??
   return success;
 }
 
@@ -191,6 +198,8 @@ dir_remove (struct dir *dir, const char *name)
 
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
+
+  //lock??
 
   /* Find directory entry. */
   if (!lookup (dir, name, &e, &ofs))
@@ -211,6 +220,7 @@ dir_remove (struct dir *dir, const char *name)
   success = true;
 
  done:
+ //unlock??
   inode_close (inode);
   return success;
 }
